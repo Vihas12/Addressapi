@@ -1,0 +1,9 @@
+Flask
+numpy
+opencv-python-headless
+easyocr
+torch
+pandas
+joblib
+requests
+gunicorn
