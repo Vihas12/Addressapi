@@ -4,8 +4,6 @@ import easyocr
 import joblib
 import pandas as pd
 import torch
-from io import BytesIO
-from PIL import Image
 import requests
 from flask import Flask, request, jsonify, make_response
 
@@ -67,30 +65,21 @@ def process_image():
     image_url = data['image_url']
 
     try:
-        # Download the image
-        response = requests.get(image_url, stream=True)
-        if response.status_code != 200:
-            return jsonify({"error": "Failed to download image"}), 400
-        
-        # Convert to OpenCV format
-        image = Image.open(BytesIO(response.content))
-        image = np.array(image)
-        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)  # Convert PIL to OpenCV format
+        # Read image from URL as a stream (without saving)
+        image_arr = np.asarray(bytearray(requests.get(image_url).content), dtype=np.uint8)
+        image = cv2.imdecode(image_arr, cv2.IMREAD_COLOR)  # Decode image
+
+        if image is None:
+            return jsonify({"error": "Failed to process image"}), 400
 
         # Perform OCR
         results = reader.readtext(image)
         extracted_text = " ".join([text[1] for text in results])
 
-        # Attempt address completion if text is detected
-        completed_addresses = complete_address(extracted_text) if extracted_text else []
-
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-    return jsonify({
-        "extracted_text": extracted_text,
-        "completed_addresses": completed_addresses
-    })
+    return jsonify({"extracted_text": extracted_text})
 
 
 if __name__ == '__main__':
