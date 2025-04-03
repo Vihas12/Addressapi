@@ -45,42 +45,26 @@ def load_models():
 def index():
     return "Welcome to the OCR and Address Completion API!"
 
-def fetch_image(image_url):
-    """Download and process image efficiently."""
-    try:
-        response = requests.get(image_url, stream=True)
-        if response.status_code == 200:
-            img_array = np.asarray(bytearray(response.raw.read()), dtype=np.uint8)
-            return cv2.imdecode(img_array, cv2.IMREAD_COLOR)
-        return None
-    except Exception:
-        return None
-
 @app.route('/ocr', methods=['POST'])
 def process_image():
     data = request.get_json()
     if not data or 'image_url' not in data:
         return jsonify({"error": "No image URL provided"}), 400
-
+    
     image_url = data['image_url']
-
+    
     try:
-        # Read image from URL as a stream (without saving)
-        image_arr = np.asarray(bytearray(requests.get(image_url).content), dtype=np.uint8)
-        image = cv2.imdecode(image_arr, cv2.IMREAD_COLOR)  # Decode image
-
-        if image is None:
-            return jsonify({"error": "Failed to process image"}), 400
-
-        # Perform OCR
-        results = reader.readtext(image)
+        # Use image URL directly for OCR processing
+        results = reader.readtext(image_url)
         extracted_text = " ".join([text[1] for text in results])
-
+        # Attempt address completion if text is detected
+        completed_addresses = complete_address(extracted_text) if extracted_text else []
+    
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-    return jsonify({"extracted_text": extracted_text})
-
-
+    return jsonify({
+        "extracted_text": extracted_text,
+        "completed_addresses": completed_addresses
+    })
 if __name__ == '__main__':
     app.run(debug=False, threaded=True)
