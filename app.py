@@ -4,6 +4,8 @@ import easyocr
 import joblib
 import pandas as pd
 import torch
+from io import BytesIO
+from PIL import Image
 import requests
 from flask import Flask, request, jsonify, make_response
 
@@ -61,24 +63,27 @@ def process_image():
     data = request.get_json()
     if not data or 'image_url' not in data:
         return jsonify({"error": "No image URL provided"}), 400
-    
+
     image_url = data['image_url']
-    image = fetch_image(image_url)
-    if image is None:
-        return jsonify({"error": "Failed to load image"}), 400
 
     try:
-        results = reader.readtext(image)
-        extracted_text = " ".join([text[1] for text in results]) if results else ""
+        # Download the image
+        response = requests.get(image_url, stream=True)
+        if response.status_code != 200:
+            return jsonify({"error": "Failed to download image"}), 400
+        
+        # Convert to OpenCV format
+        image = Image.open(BytesIO(response.content))
+        image = np.array(image)
+        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)  # Convert PIL to OpenCV format
 
-        completed_addresses = []
-        if extracted_text:
-            vectorizer, knn, df = load_models()
-            if vectorizer and knn and df is not None:
-                query_vector = vectorizer.transform([extracted_text])
-                _, idx = knn.kneighbors(query_vector)
-                completed_addresses = df.iloc[idx[0]]["full_address"].tolist()
-    
+        # Perform OCR
+        results = reader.readtext(image)
+        extracted_text = " ".join([text[1] for text in results])
+
+        # Attempt address completion if text is detected
+        completed_addresses = complete_address(extracted_text) if extracted_text else []
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -86,6 +91,7 @@ def process_image():
         "extracted_text": extracted_text,
         "completed_addresses": completed_addresses
     })
+
 
 if __name__ == '__main__':
     app.run(debug=False, threaded=True)
