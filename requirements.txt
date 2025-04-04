@@ -1,8 +1,10 @@
 flask==2.3.2
-torch==2.0.1+cu117 --extra-index-url https://download.pytorch.org/whl/cu117torch==2.0.1+cu117
+torch==2.0.1
 easyocr==1.6.2
 scikit-learn==1.2.2
 pandas==2.0.2
 joblib==1.2.0
 gevent==22.10.2
 gunicorn==20.1.0
+pyarrow==12.0.1 
+
