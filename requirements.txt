@@ -1,12 +1,12 @@
-flask==2.3.2
-requests==2.31.0
-numpy==1.24.4
-opencv-python-headless==4.5.4.60  
-easyocr==1.6.2
-joblib==1.2.0
-pandas==2.0.2
-torch==2.0.1
-scikit-learn==1.2.2
-pyarrow==12.0.1  # Required for reading Parquet files
-gunicorn==20.1.0
-gevent==22.10.2
+flask
+requests
+numpy
+opencv-python-headless
+easyocr
+joblib
+pandas
+torch
+scikit-learn
+pyarrow
+gunicorn
+gevent
